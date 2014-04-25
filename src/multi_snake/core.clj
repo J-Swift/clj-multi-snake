@@ -1,5 +1,5 @@
 (ns multi-snake.core
-  (:require multi-snake.board
+  (:require multi-snake.game
             multi-snake.ui)
   (:gen-class))
 
@@ -7,5 +7,5 @@
   [& args]
   ;; work around dangerous default behaviour in Clojure
   (alter-var-root #'*read-eval* (constantly false))
-  (let [board (multi-snake.board/board)]
-    (multi-snake.ui/render board)))
+  (let [game (multi-snake.game/game)]
+    (multi-snake.ui/render game)))

@@ -18,26 +18,32 @@
         (.add panel (new-cell n))
         (recur (- n 1))))))
 
-(defn- board->jpanel
-  [{:keys [width height]}]
-  (let [panel (JPanel. (GridLayout. width height))]
+(defn- game->jpanel
+  [game]
+  (let [{:keys [width height]} (:board game)
+        ;player-pos (:player-pos game)
+        panel (JPanel. (GridLayout. width height))]
     (doto panel
       (.setBackground Color/RED)
       (.setPreferredSize (Dimension. (* CELL_SIZE width)
                                      (* CELL_SIZE height))))
     (fill-panel panel width height)))
 
-(defn- board->jframe
-  [board]
+(defn- game->jframe
+  [game]
   (doto (JFrame. "Multi-Snake!")
-    (.add (board->jpanel board))
+    (.add (game->jpanel game))
     (.pack)
     (.setResizable false)
     (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Public API
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn render
-  [board]
-  (let [frame (board->jframe board)]
+  [game]
+  (let [frame (game->jframe game)]
     (.setVisible frame true))
   nil)
 
