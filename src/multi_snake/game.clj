@@ -1,4 +1,5 @@
-(ns multi-snake.game)
+(ns multi-snake.game
+  (:use [multi-snake.board :as msb]))
 
 (defn- pos-in-dir
   "Translate a point to the point one unit in the provided direction.
@@ -10,6 +11,9 @@
     (= :down dir) {:x x :y (inc y)}
     (= :up dir) {:x x :y (dec y)}))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Public API
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn tick
   "Takes a gamestate and moves it one unit-of-time forward, returning the
@@ -25,7 +29,9 @@
   ([] (game {}))
   ([config]
    (let [player-pos (or (:starting-pos config) {:x 0 :y 0})
-         player-dir (or (:starting-dir config) :right)]
+         player-dir (or (:starting-dir config) :right)
+         board (or (:board config) (msb/board))]
      {:player-pos player-pos
-      :player-dir player-dir})))
+      :player-dir player-dir
+      :board board})))
 
