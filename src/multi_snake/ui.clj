@@ -17,6 +17,7 @@
   (doto (JFrame. "Multi-Snake!")
     (.add (board->jpanel board))
     (.pack)
+    (.setResizable false)
     (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)))
 
 (defn render
