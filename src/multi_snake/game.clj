@@ -1,5 +1,6 @@
 (ns multi-snake.game
-  (:use [multi-snake.board :as msb]))
+  (:use [multi-snake.board :as ms.b]
+        [multi-snake.input :as ms.in]))
 
 (defn- pos-in-dir
   "Translate a point one unit in the provided direction.
@@ -20,8 +21,10 @@
   resultant gamestate."
   [game]
   (let [{pos :player-pos dir :player-dir} game
-        new-pos (pos-in-dir pos dir)]
-    (assoc game :player-pos new-pos)))
+        action (get-action (:input game))
+        dir' (if action action dir)
+        pos' (pos-in-dir pos dir')]
+    (assoc game :player-pos pos' :player-dir dir')))
 
 (defn game
   "Generates a game with the given configuration. Default values will be used
@@ -30,8 +33,10 @@
   ([config]
    (let [player-pos (or (:starting-pos config) {:x 0 :y 0})
          player-dir (or (:starting-dir config) :right)
-         board (or (:board config) (msb/board))]
+         board (or (:board config) (ms.b/board))
+         input (or (:input config) (ms.in/basic-input))]
      {:player-pos player-pos
       :player-dir player-dir
-      :board board})))
+      :board board
+      :input input})))
 
