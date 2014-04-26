@@ -2,14 +2,14 @@
   (:use [multi-snake.board :as msb]))
 
 (defn- pos-in-dir
-  "Translate a point to the point one unit in the provided direction.
+  "Translate a point one unit in the provided direction.
   N.B. Origin is top-left."
   [{:keys [x y]} dir]
   (cond
     (= :right dir) {:x (inc x) :y y}
-    (= :left dir) {:x (dec x) :y y}
-    (= :down dir) {:x x :y (inc y)}
-    (= :up dir) {:x x :y (dec y)}))
+    (= :left  dir) {:x (dec x) :y y}
+    (= :down  dir) {:x x :y (inc y)}
+    (= :up    dir) {:x x :y (dec y)}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API
