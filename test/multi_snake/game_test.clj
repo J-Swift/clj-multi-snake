@@ -48,7 +48,7 @@
   [dirs]
   (let [coll (atom (cycle dirs))]
     (reify AInput
-      (get-action [_]
+      (get-action [_ _]
         (let [dir (first @coll)]
           (reset! coll (rest @coll))
           dir)))))

@@ -21,7 +21,7 @@
   resultant gamestate."
   [game]
   (let [{pos :player-pos dir :player-dir} game
-        action (get-action (:input game))
+        action (get-action (:input game) game)
         dir' (if action action dir)
         pos' (pos-in-dir pos dir')]
     (assoc game :player-pos pos' :player-dir dir')))
