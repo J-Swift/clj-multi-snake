@@ -1,4 +1,6 @@
 (ns multi-snake.ui
+  (:require
+    [multi-snake.game :as ms.g])
   (:import
     (java.awt Color Dimension GridLayout)
     (javax.swing SwingUtilities JFrame JPanel BorderFactory)))
@@ -8,6 +10,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def LOGGING_ENABLED false)
+(def FPS 10)
 (def CELL_SIZE 25)
 (def DEFAULT_COLOR Color/WHITE)
 (def PLAYER_COLOR Color/BLACK)
@@ -100,11 +103,15 @@
     (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
     (.setVisible true)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Public API
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- render-update
+  "Make changes to any UI components that may have changed between frames."
+  [game]
+  (log "-------------")
+  (log "render-update")
+  (run-on-ui-thread
+    (update-frame game)))
 
-(defn render-initial
+(defn- setup-ui
   "Setup UI with necessary components before game is actually kicked off."
   [game]
   (log "--------------")
@@ -112,11 +119,16 @@
   (run-on-ui-thread
     (game->jframe game)))
 
-(defn render-update
-  "Make changes to any UI components that may have changed between frames."
-  [game]
-  (log "-------------")
-  (log "render-update")
-  (run-on-ui-thread
-    (update-frame game)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Public API
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn play-game
+  "One-stop-shop"
+  [initial-game]
+  (setup-ui initial-game)
+  (loop [game initial-game]
+    (render-update game)
+    (Thread/sleep (/ 1000 FPS))
+    (recur (ms.g/tick game))))
 
