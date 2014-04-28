@@ -6,11 +6,12 @@
   "Translate a point one unit in the provided direction.
   N.B. Origin is top-left."
   [{:keys [x y]} dir]
-  (cond
-    (= :right dir) {:x (inc x) :y y}
-    (= :left  dir) {:x (dec x) :y y}
-    (= :down  dir) {:x x :y (inc y)}
-    (= :up    dir) {:x x :y (dec y)}))
+  (case dir
+    :right {:x (inc x) :y y}
+    :left  {:x (dec x) :y y}
+    :down  {:x x :y (inc y)}
+    :up    {:x x :y (dec y)}
+    {:x x :y y}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API
@@ -26,17 +27,21 @@
         pos' (pos-in-dir pos dir')]
     (assoc game :player-pos pos' :player-dir dir')))
 
-(defn game
-  "Generates a game with the given configuration. Default values will be used
-  for any that aren't provided."
-  ([] (game {}))
-  ([config]
-   (let [player-pos (or (:starting-pos config) {:x 0 :y 0})
-         player-dir (or (:starting-dir config) :right)
-         board (or (:board config) (ms.b/board))
-         input (or (:input config) (ms.in/basic-input))]
-     {:player-pos player-pos
-      :player-dir player-dir
-      :board board
-      :input input})))
+(defn make-game
+  "Makes a game with the given configuration values:
+  
+  :starting-pos - Point to position player initially (default {0,0})
+  :starting-dir - Direction player is oriented initially (default :right)
+  :board        - Board to use for the game (default to board/make-board)
+  :input        - Input system to use for player (default to input/basic-input)"
+  ([] (make-game {}))
+  ([{:keys [starting-pos starting-dir board input]
+     :or {starting-pos {:x 0 :y 0}
+          starting-dir :right
+          board (ms.b/make-board)
+          input (ms.in/basic-input)}}]
+   {:player-pos starting-pos
+    :player-dir starting-dir
+    :board board
+    :input input}))
 

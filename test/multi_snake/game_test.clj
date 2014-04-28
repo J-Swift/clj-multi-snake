@@ -6,18 +6,18 @@
 
 (deftest initialization
   (testing "Default value"
-    (let [game (ms.g/game)
+    (let [game (ms.g/make-game)
           {pos :player-pos dir :player-dir board :board} game]
       (is (= {:x 0 :y 0} pos))
       (is (= :right dir))
-      (is (= (ms.b/board) board))))
+      (is (= (ms.b/make-board) board))))
   (testing "Parameterized values"
     (let [starting-pos {:x 5 :y 10}
           starting-dir :left
-          pre-board (ms.b/board {:width 15})
-          game (ms.g/game {:starting-pos starting-pos
-                           :starting-dir starting-dir
-                           :board pre-board})
+          pre-board (ms.b/make-board {:width 15})
+          game (ms.g/make-game {:starting-pos starting-pos
+                                :starting-dir starting-dir
+                                :board pre-board})
           {pos :player-pos dir :player-dir post-board :board} game]
       (is (= starting-pos pos))
       (is (= starting-dir dir))
@@ -26,17 +26,17 @@
 (deftest game-ticks
   (testing "Player moves one square in the direction they are facing"
     (let [start-pos {:x 5 :y 5}
-          game-r (ms.g/tick (ms.g/game {:starting-dir :right
-                                        :starting-pos start-pos}))
+          game-r (ms.g/tick (ms.g/make-game {:starting-dir :right
+                                            :starting-pos start-pos}))
           {pos-r :player-pos} game-r
-          game-d (ms.g/tick (ms.g/game {:starting-dir :down
-                                        :starting-pos start-pos}))
+          game-d (ms.g/tick (ms.g/make-game {:starting-dir :down
+                                             :starting-pos start-pos}))
           {pos-d :player-pos} game-d
-          game-u (ms.g/tick (ms.g/game {:starting-dir :up
-                                        :starting-pos start-pos}))
+          game-u (ms.g/tick (ms.g/make-game {:starting-dir :up
+                                             :starting-pos start-pos}))
           {pos-u :player-pos} game-u
-          game-l (ms.g/tick (ms.g/game {:starting-dir :left
-                                        :starting-pos start-pos}))
+          game-l (ms.g/tick (ms.g/make-game {:starting-dir :left
+                                             :starting-pos start-pos}))
           {pos-l :player-pos} game-l]
       (is (= {:x 6 :y 5} pos-r))
       (is (= {:x 5 :y 6} pos-d))
@@ -56,10 +56,10 @@
 (deftest user-input
   (testing "Mock input"
     (let [input (dir-input-proxy [:down])
-          game (ms.g/tick (ms.g/game {:input input}))]
+          game (ms.g/tick (ms.g/make-game {:input input}))]
       (is (= :down (:player-dir game))))
     (let [input (dir-input-proxy [:up :left])
-          game (ms.g/tick (ms.g/game {:input input}))
+          game (ms.g/tick (ms.g/make-game {:input input}))
           game' (ms.g/tick game)]
       (is (= :up (:player-dir game)))
       (is (= :left (:player-dir game'))))))
