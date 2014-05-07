@@ -2,17 +2,15 @@
   (:use [multi-snake.board :as ms.b]
         [multi-snake.input :as ms.in]))
 
-
 (defn- pos-in-dir
   "Translate a point one unit in the provided direction.
   N.B. Origin is top-left."
   [{:keys [x y]} dir]
-  (case dir
-    :right {:x (inc x) :y y}
-    :left  {:x (dec x) :y y}
-    :down  {:x x :y (inc y)}
-    :up    {:x x :y (dec y)}
-    {:x x :y y}))
+  (let [offsets {:right [1 0] :left [-1 0]
+                 :down [0 1]  :up [0 -1]}
+        offset (dir offsets)]
+    {:x (+ x (get offset 0))
+     :y (+ y (get offset 1))}))
 
 (defn- dir-for-action
   "Check if the action is valid provided current direction."
@@ -23,7 +21,6 @@
              (not (opposites [action cur-dir])))
       action
       cur-dir)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API

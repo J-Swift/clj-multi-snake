@@ -50,7 +50,7 @@
     (reify AInput
       (get-action [_ _]
         (let [dir (first @coll)]
-          (reset! coll (rest @coll))
+          (swap! coll rest)
           dir)))))
 
 (deftest user-input
