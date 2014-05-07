@@ -2,6 +2,7 @@
   (:require
     ;[seesaw.dev :as ss.dev]
     [multi-snake.game :as ms.g]
+    [multi-snake.input :as ms.in]
     [seesaw.border :as ss.b :only line-border]
     [seesaw.core :as ss]))
 
@@ -104,6 +105,13 @@
   (ss/invoke-soon
     (update-frame! game)))
 
+(defn- attach-inputs
+  "Set up necessary keyboard handlers and random listeners"
+  [game]
+  (log "attach-inputs")
+  (-> (:input game)
+      (ms.in/attach-input FRAME)))
+
 (defn- setup-ui
   "Setup UI with necessary components before game is actually kicked off."
   [game]
@@ -120,6 +128,7 @@
   "One-stop-shop"
   [initial-game]
   (setup-ui initial-game)
+  (attach-inputs initial-game)
   (loop [game initial-game]
     (render-update game)
     (Thread/sleep (/ 1000 *FPS*))
