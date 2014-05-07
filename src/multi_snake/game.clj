@@ -2,6 +2,7 @@
   (:use [multi-snake.board :as ms.b]
         [multi-snake.input :as ms.in]))
 
+
 (defn- pos-in-dir
   "Translate a point one unit in the provided direction.
   N.B. Origin is top-left."
@@ -13,6 +14,17 @@
     :up    {:x x :y (dec y)}
     {:x x :y y}))
 
+(defn- dir-for-action
+  "Check if the action is valid provided current direction."
+  [action cur-dir]
+  (let [opposites #{[:up :down], [:left :right]
+                    [:down :up], [:right :left]}]
+    (if (and action
+             (not (opposites [action cur-dir])))
+      action
+      cur-dir)))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -23,7 +35,7 @@
   [game]
   (let [{pos :player-pos dir :player-dir} game
         action (get-action (:input game) game)
-        dir' (if action action dir)
+        dir' (dir-for-action action dir)
         pos' (pos-in-dir pos dir')]
     (assoc game :player-pos pos' :player-dir dir')))
 

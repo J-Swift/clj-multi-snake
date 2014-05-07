@@ -62,5 +62,10 @@
           game (ms.g/tick (ms.g/make-game {:input input}))
           game' (ms.g/tick game)]
       (is (= :up (:player-dir game)))
-      (is (= :left (:player-dir game'))))))
+      (is (= :left (:player-dir game')))))
+  (testing "Can't move in direction opposite of your current heading"
+    (let [input (dir-input-proxy [:left])
+          game (ms.g/tick (ms.g/make-game {:input input
+                                           :starting-dir :right}))]
+      (is (= :right (:player-dir game))))))
 
