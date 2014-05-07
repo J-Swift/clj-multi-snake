@@ -13,7 +13,7 @@
 (def LOGGING_ENABLED false)
 (def DEFAULT_COLOR :white)
 (def PLAYER_COLOR :black)
-(def ^:dynamic *FPS* 10)
+(def ^:dynamic *FPS* 15)
 (def ^:dynamic *CELL_SIZE* 25)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
