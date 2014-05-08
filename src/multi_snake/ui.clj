@@ -11,8 +11,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def LOGGING_ENABLED false)
-(def DEFAULT_COLOR :white)
-(def PLAYER_COLOR :black)
+(def ^:dynamic COLOR_MAP {:player  :black
+                          :apple   :red
+                          :default :white})
 (def ^:dynamic *FPS* 15)
 (def ^:dynamic *CELL_SIZE* 25)
 
@@ -28,17 +29,17 @@
 
 (defn- log
   [& args]
-  (if LOGGING_ENABLED
+  (when LOGGING_ENABLED
     (apply println (map str args))))
 
 (defn- xy->n
-  "Translate from a 2-dimensaional array index into a 1-dimensional variant."
+  "Translate from a 2-dimensional array index into a 1-dimensional variant."
   [x y max-x]
   (+ x (* max-x y)))
 
 (defn- paint-cell!
-  [cell is-player-pos?]
-  (ss/config! cell :background (if is-player-pos? PLAYER_COLOR DEFAULT_COLOR)))
+  [cell type-of-cell]
+  (ss/config! cell :background (type-of-cell COLOR_MAP)))
 
 (defn- new-cell
   []
@@ -46,14 +47,19 @@
 
 (defn- paint-panel!
   "Paint all the cells for the given panel"
-  [panel num-cells-wide num-cells-high player-pos]
+  [panel game]
   (log "paint-panel")
-  (doseq [y (range num-cells-high)
-          x (range num-cells-wide)]
-    (let [n (xy->n x y num-cells-wide)
-          cell (@N->CELL n)
-          is-player-pos? (= {:x x :y y} player-pos)]
-      (paint-cell! cell is-player-pos?)))
+  (let [{{width :width height :height} :board
+        apples :apples player-pos :player-pos} game]
+    (doseq [y (range height)
+            x (range width)]
+      (let [n (xy->n x y width)
+            cell (@N->CELL n)
+            pos {:x x :y y}]
+        (cond
+          (= pos player-pos) (paint-cell! cell :player)
+          (get apples pos) (paint-cell! cell :apple)
+          :else (paint-cell! cell :default)))))
   panel)
 
 (defn- fill-panel!
@@ -70,20 +76,17 @@
   [game]
   (log "game->jpanel")
   (let [{:keys [width height]} (:board game)
-        player-pos (:player-pos game)
         panel (ss/grid-panel :columns width :rows height)]
     (-> panel
         (ss/config! :size [(* *CELL_SIZE* width) :by (* *CELL_SIZE* height)])
         (fill-panel! (* width height))
-        (paint-panel! width height player-pos))))
+        (paint-panel! game))))
 
 (defn- update-frame!
   [game]
   (log "update-frame")
-  (let [{:keys [width height]} (:board game)
-        player-pos (:player-pos game)]
-    (paint-panel! (ss/select FRAME [:#board]) width height player-pos)
-    (ss/repaint! FRAME)))
+  (paint-panel! (ss/select FRAME [:#board]) game)
+  (ss/repaint! FRAME))
 
 (defn- game->jframe
   [game]

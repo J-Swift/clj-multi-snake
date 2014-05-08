@@ -53,19 +53,29 @@
           (swap! coll rest)
           dir)))))
 
+(defn- build-game-with-proxy
+  [& actions]
+  (let [input (dir-input-proxy actions)]
+    (ms.g/make-game {:starting-dir :right :input input})))
+
 (deftest user-input
   (testing "Mock input"
-    (let [input (dir-input-proxy [:down])
-          game (ms.g/tick (ms.g/make-game {:input input}))]
+    (let [game (ms.g/tick (build-game-with-proxy :down))]
       (is (= :down (:player-dir game))))
-    (let [input (dir-input-proxy [:up :left])
-          game (ms.g/tick (ms.g/make-game {:input input}))
+    (let [game (ms.g/tick (build-game-with-proxy :up :left))
           game' (ms.g/tick game)]
       (is (= :up (:player-dir game)))
       (is (= :left (:player-dir game')))))
   (testing "Can't move in direction opposite of your current heading"
-    (let [input (dir-input-proxy [:left])
-          game (ms.g/tick (ms.g/make-game {:input input
-                                           :starting-dir :right}))]
+    (let [game (ms.g/tick (build-game-with-proxy :left))]
       (is (= :right (:player-dir game))))))
+
+(deftest apples
+  (testing "are consumed when a snake intersects them"
+    (let [game (ms.g/make-game {:starting-pos {:x 0 :y 0}
+                                :starting-dir :right
+                                :apples #{{:x 1 :y 0}}})
+          game' (ms.g/tick game)]
+      (is (= #{{:x 1 :y 0}} (:apples game)))
+      (is (= #{} (:apples game'))))))
 
