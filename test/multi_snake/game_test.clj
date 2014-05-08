@@ -6,10 +6,9 @@
 
 (deftest initialization
   (testing "Default value"
-    (let [game (ms.g/make-game)
-          {pos :player-pos dir :player-dir board :board} game]
-      (is (= {:x 0 :y 0} pos))
-      (is (= :right dir))
+    (let [{:keys [board] :as game} (ms.g/make-game)]
+      (is (= #{{:x 0 :y 0}} (ms.g/positions-for-player game)))
+      (is (= :right (get-in game [:snake :dir])))
       (is (= (ms.b/make-board) board))))
   (testing "Parameterized values"
     (let [starting-pos {:x 5 :y 10}
@@ -18,9 +17,9 @@
           game (ms.g/make-game {:starting-pos starting-pos
                                 :starting-dir starting-dir
                                 :board pre-board})
-          {pos :player-pos dir :player-dir post-board :board} game]
-      (is (= starting-pos pos))
-      (is (= starting-dir dir))
+          {post-board :board} game]
+      (is (= #{starting-pos} (ms.g/positions-for-player game)))
+      (is (= starting-dir (get-in game [:snake :dir])))
       (is (= pre-board post-board)))))
 
 (deftest game-ticks
@@ -28,16 +27,16 @@
     (let [start-pos {:x 5 :y 5}
           game-r (ms.g/tick (ms.g/make-game {:starting-dir :right
                                             :starting-pos start-pos}))
-          {pos-r :player-pos} game-r
+          pos-r (get-in game-r [:snake :head])
           game-d (ms.g/tick (ms.g/make-game {:starting-dir :down
                                              :starting-pos start-pos}))
-          {pos-d :player-pos} game-d
+          pos-d (get-in game-d [:snake :head])
           game-u (ms.g/tick (ms.g/make-game {:starting-dir :up
                                              :starting-pos start-pos}))
-          {pos-u :player-pos} game-u
+          pos-u (get-in game-u [:snake :head])
           game-l (ms.g/tick (ms.g/make-game {:starting-dir :left
                                              :starting-pos start-pos}))
-          {pos-l :player-pos} game-l]
+          pos-l (get-in game-l [:snake :head])]
       (is (= {:x 6 :y 5} pos-r))
       (is (= {:x 5 :y 6} pos-d))
       (is (= {:x 5 :y 4} pos-u))
@@ -61,14 +60,14 @@
 (deftest user-input
   (testing "Mock input"
     (let [game (ms.g/tick (build-game-with-proxy :down))]
-      (is (= :down (:player-dir game))))
+      (is (= :down (get-in game [:snake :dir]))))
     (let [game (ms.g/tick (build-game-with-proxy :up :left))
           game' (ms.g/tick game)]
-      (is (= :up (:player-dir game)))
-      (is (= :left (:player-dir game')))))
+      (is (= :up (get-in game [:snake :dir])))
+      (is (= :left (get-in game' [:snake :dir]))))
   (testing "Can't move in direction opposite of your current heading"
     (let [game (ms.g/tick (build-game-with-proxy :left))]
-      (is (= :right (:player-dir game))))))
+      (is (= :right (get-in game [:snake :dir])))))))
 
 (deftest apples
   (let [game (ms.g/make-game {:starting-pos {:x 0 :y 0}
@@ -82,8 +81,14 @@
       (is (not (empty? (:apples (nth frames 2))))))
     (testing "new one won't appear in space currently occupied by a player"
       (let [no-apple-frame (nth frames 1)]
-        (dotimes [_ 100000]
+        (dotimes [_ 10000]
           (let [{apples :apples :as new-frame} (ms.g/tick no-apple-frame)]
             (is (= 1 (count apples)))
-            (is (nil? (get apples (:player-pos new-frame) nil)))))))))
+            (is (nil? (get apples (ms.g/positions-for-player new-frame) nil)))))))
+    (testing "player grows when eating an apple, but only when eating an apple"
+      ; Make this a no-op to avoid situations where an apple is placed in the
+      ; path of a snake during our test
+      (binding [generate-new-apples #((hash-set))]
+        (is (= #{{:x 1 :y 0}, {:x 2 :y 0}} (ms.g/positions-for-player (nth frames 2))))
+        (is (= #{{:x 2 :y 0}, {:x 3 :y 0}} (ms.g/positions-for-player (nth frames 3))))))))
 

@@ -49,15 +49,14 @@
   "Paint all the cells for the given panel"
   [panel game]
   (log "paint-panel")
-  (let [{{width :width height :height} :board
-        apples :apples player-pos :player-pos} game]
+  (let [{{:keys [width height]} :board apples :apples} game]
     (doseq [y (range height)
             x (range width)]
       (let [n (xy->n x y width)
             cell (@N->CELL n)
             pos {:x x :y y}]
         (cond
-          (= pos player-pos) (paint-cell! cell :player)
+          (get (ms.g/positions-for-player game) pos) (paint-cell! cell :player)
           (get apples pos) (paint-cell! cell :apple)
           :else (paint-cell! cell :default)))))
   panel)
