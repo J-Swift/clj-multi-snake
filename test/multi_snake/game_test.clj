@@ -71,11 +71,19 @@
       (is (= :right (:player-dir game))))))
 
 (deftest apples
-  (testing "are consumed when a snake intersects them"
-    (let [game (ms.g/make-game {:starting-pos {:x 0 :y 0}
-                                :starting-dir :right
-                                :apples #{{:x 1 :y 0}}})
-          game' (ms.g/tick game)]
-      (is (= #{{:x 1 :y 0}} (:apples game)))
-      (is (= #{} (:apples game'))))))
+  (let [game (ms.g/make-game {:starting-pos {:x 0 :y 0}
+                              :starting-dir :right
+                              :apples #{{:x 1 :y 0}}})
+        frames (iterate ms.g/tick game)]
+    (testing "they are consumed when a snake intersects them"
+      (is (not (empty? (:apples (nth frames 0)))))
+      (is (empty? (:apples (nth frames 1)))))
+    (testing "new one appears one tick after another is eaten"
+      (is (not (empty? (:apples (nth frames 2))))))
+    (testing "new one won't appear in space currently occupied by a player"
+      (let [no-apple-frame (nth frames 1)]
+        (dotimes [_ 100000]
+          (let [{apples :apples :as new-frame} (ms.g/tick no-apple-frame)]
+            (is (= 1 (count apples)))
+            (is (nil? (get apples (:player-pos new-frame) nil)))))))))
 

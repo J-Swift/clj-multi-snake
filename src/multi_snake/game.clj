@@ -3,6 +3,15 @@
             [multi-snake.board :as ms.b]
             [multi-snake.input :as ms.in]))
 
+(defn- random-apple
+  "Generate a new position for an apple given the current gamestate."
+  [{{:keys [width height]} :board
+    player-pos :player-pos}]
+  (let [possible-apples (for [x (range width)
+                              y (range height)]
+                          {:x x :y y})]
+    (first (drop-while #{player-pos} (shuffle possible-apples)))))
+
 (defn- pos-in-dir
   "Translate a point one unit in the provided direction.
   N.B. Origin is top-left."
@@ -14,7 +23,7 @@
      :y (+ y (get offset 1))}))
 
 (defn- dir-for-action
-  "Check if the action is valid provided current direction."
+  "Either return the action if it is valid or the cur-dir if not."
   [action cur-dir]
   (let [opposites #{[:up :down], [:left :right]
                     [:down :up], [:right :left]}]
@@ -22,6 +31,23 @@
              (not (opposites [action cur-dir])))
       action
       cur-dir)))
+
+(defn- resolve-apples
+  "If there are apples on the board, check if a player is eating them. If not,
+  then generate one."
+  [{:keys [player-pos apples] :as game}]
+  (let [apples' (if (empty? apples)
+                  #{(random-apple game)}
+                  (c.set/difference apples (c.set/intersection #{player-pos} apples)))]
+    (assoc game :apples apples')))
+
+(defn- move-player
+  "Fetch and resolve input, then update player position accordingly."
+  [{:keys [input player-pos player-dir] :as game}]
+  (let [action (ms.in/get-action input game)
+        dir' (dir-for-action action player-dir)
+        pos' (pos-in-dir player-pos dir')]
+    (assoc game :player-pos pos' :player-dir dir')))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API
@@ -31,15 +57,9 @@
   "Takes a gamestate and moves it one unit-of-time forward, returning the
   resultant gamestate."
   [game]
-  (let [{pos :player-pos dir :player-dir
-         apples :apples input :input} game
-        action (ms.in/get-action input game)
-        dir' (dir-for-action action dir)
-        pos' (pos-in-dir pos dir')
-        apples-consumed (c.set/intersection (into #{} [pos']) apples)]
-    (assoc game :player-pos pos'
-                :player-dir dir'
-                :apples (c.set/difference apples apples-consumed))))
+  (-> game
+      (move-player)
+      (resolve-apples)))
 
 (defn make-game
   "Makes a game with the given configuration values:
