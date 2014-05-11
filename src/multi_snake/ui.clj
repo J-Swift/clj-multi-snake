@@ -122,6 +122,20 @@
   (ss/invoke-now ; make sure we are setup before continuing to run the game
     (game->jframe game)))
 
+(defn- show-win
+  "Congratulatory dialog"
+  []
+  (ss/invoke-now
+    (-> (ss/dialog :title "Congrats!"
+                   :content "You win!"
+                   :option-type :default
+                   :success-fn (fn [e] (System/exit 0)))
+        (ss/pack!)
+        ; workaround seesaw displaying in top-left
+        ; https://groups.google.com/forum/#!topic/seesaw-clj/DPdRyrYO800
+        (doto (.setLocationRelativeTo FRAME))
+        (ss/show!))))
+
 (defn- play-again-or-exit
   "Modal dialog which asks if the user wants to quit the game, or try again."
   []
@@ -140,19 +154,21 @@
         (ss/show!))))
 
 (defn- game-loop
-  "Renders a frame, checks if the game is over, then asks user to try again
-  if they die."
+  "Renders a frame, then responds depending on the game status"
   [initial-game]
   (loop [game initial-game]
-    (if (= :alive (get-in game [:snake :status]))
-      (do
-        (render-update game)
-        (Thread/sleep (/ 1000 *FPS*))
-        (recur (ms.g/tick game)))
-      (do
-        (play-again-or-exit)
-        (ms.in/reset-input (:input initial-game))
-        (recur initial-game)))))
+    (case (:status game)
+      :ongoing (do
+                 (render-update game)
+                 (Thread/sleep (/ 1000 *FPS*))
+                 (recur (ms.g/tick game)))
+      :lose (do
+              (play-again-or-exit)
+              (ms.in/reset-input (:input initial-game))
+              (recur initial-game))
+      :win (do
+             (render-update game)
+             (show-win)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API

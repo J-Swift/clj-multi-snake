@@ -126,4 +126,13 @@
       (doseq [game all-games]
         (is (= :dead (get-in (ms.g/tick game) [:snake :status])))))))
 
+(deftest win-condition
+  (testing "changes game status to :win when it is met"
+    (let [game (ms.g/make-game {:win-cond (fn [g] (= {:x 2 :y 0} (get-in g [:snake :head])))
+                                :starting-pos {:x 0 :y 0}
+                                :starting-dir :right})
+          frames (iterate ms.g/tick game)]
+      (is (= :ongoing (:status (nth frames 0))))
+      (is (= :ongoing (:status (nth frames 1))))
+      (is (= :win (:status (nth frames 2)))))))
 

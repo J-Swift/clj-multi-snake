@@ -23,6 +23,13 @@
       action
       cur-dir)))
 
+(defn- resolve-win-condition
+  [{:keys [win-cond] :as game}]
+  (cond
+    (= :dead (get-in game [:snake :status])) (assoc game :status :lose)
+    (win-cond game) (assoc game :status :win)
+    :else game))
+
 (defn- resolve-dead-player
   [{:keys [snake] :as game}]
   (if (or (ms.sn/intersects-self? snake)
@@ -70,7 +77,8 @@
       (extend-player)
       (resolve-apples)
       (contract-player)
-      (resolve-dead-player)))
+      (resolve-dead-player)
+      (resolve-win-condition)))
 
 (defn make-game
   "Makes a game with the given configuration values:
@@ -79,16 +87,22 @@
   :starting-dir - Direction player is oriented initially (default to :right)
   :board        - Board to use for the game (default to board/make-board)
   :input        - Input system to use for player (default to input/basic-input)
-  :apples       - Set of spaces for apples (default to #{})"
+  :apples       - Set of spaces for apples (default to #{})
+  :win-cond     - Function that takes a game and returns true if the game is won
+                  (default to snake body being >= 5 units)"
   ([] (make-game {}))
-  ([{:keys [starting-pos starting-dir board input apples]
+  ([{:keys [starting-pos starting-dir board input apples win-cond]
      :or {starting-pos {:x 0 :y 0}
           starting-dir :right
           board (ms.b/make-board)
           input (ms.in/basic-input)
-          apples #{}}}]
+          apples #{}
+          win-cond (fn [game] (let [c (count (get-in game [:snake :body]))]
+                                (>= c 5)))}}]
    {:snake (ms.sn/make-snake {:head starting-pos :dir starting-dir})
     :board board
     :input input
+    :status :ongoing
+    :win-cond win-cond
     :apples apples}))
 
