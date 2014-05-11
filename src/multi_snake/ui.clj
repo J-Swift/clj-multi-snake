@@ -122,6 +122,37 @@
   (ss/invoke-now ; make sure we are setup before continuing to run the game
     (game->jframe game)))
 
+(defn- play-again-or-exit
+  "Modal dialog which asks if the user wants to quit the game, or try again."
+  []
+  (ss/invoke-now
+    (-> (ss/dialog :title "Game Over"
+                   :content "You died!"
+                   :option-type :yes-no
+                   :options [(ss/action :name "Quit"
+                                        :handler (fn [e] (System/exit 0)))
+                             (ss/action :name "Try again"
+                                        :handler (fn [e] (ss/return-from-dialog e :ok)))])
+        (ss/pack!)
+        ; workaround seesaw displaying in top-left
+        ; https://groups.google.com/forum/#!topic/seesaw-clj/DPdRyrYO800
+        (doto (.setLocationRelativeTo FRAME))
+        (ss/show!))))
+
+(defn- game-loop
+  "Renders a frame, checks if the game is over, then asks user to try again
+  if they die."
+  [initial-game]
+  (loop [game initial-game]
+    (if (= :alive (get-in game [:snake :status]))
+      (do
+        (render-update game)
+        (Thread/sleep (/ 1000 *FPS*))
+        (recur (ms.g/tick game)))
+      (do
+        (play-again-or-exit)
+        (recur initial-game)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,10 +160,8 @@
 (defn play-game
   "One-stop-shop"
   [initial-game]
-  (setup-ui initial-game)
-  (attach-inputs initial-game)
-  (loop [game initial-game]
-    (render-update game)
-    (Thread/sleep (/ 1000 *FPS*))
-    (recur (ms.g/tick game))))
+  (doto initial-game
+    (setup-ui)
+    (attach-inputs)
+    (game-loop)))
 

@@ -1,7 +1,9 @@
 (ns multi-snake.game-test
-  (:use clojure.test
+  (:use clojure.test)
+  (:require
         [multi-snake.board :as ms.b]
         [multi-snake.input :as ms.in]
+        [multi-snake.snake :as ms.sn]
         [multi-snake.game :as ms.g]))
 
 (deftest initialization
@@ -46,7 +48,7 @@
   "Mock out the input with a proxy that returns a static value"
   [dirs]
   (let [coll (atom (cycle dirs))]
-    (reify AInput
+    (reify ms.in/AInput
       (get-action [_ _]
         (let [dir (first @coll)]
           (swap! coll rest)
@@ -88,7 +90,23 @@
     (testing "player grows when eating an apple, but only when eating an apple"
       ; Make this a no-op to avoid situations where an apple is placed in the
       ; path of a snake during our test
-      (binding [generate-new-apples #((hash-set))]
+      (binding [ms.g/generate-new-apples #((hash-set))]
         (is (= #{{:x 1 :y 0}, {:x 2 :y 0}} (ms.g/positions-for-player (nth frames 2))))
         (is (= #{{:x 2 :y 0}, {:x 3 :y 0}} (ms.g/positions-for-player (nth frames 3))))))))
+
+(deftest dying
+  (testing "intersecting self kills you"
+    (let [input (dir-input-proxy [:right :down :left :up])
+          game (ms.g/make-game {:starting-pos {:x 7 :y 0}
+                                :starting-dir :right
+                                :input input})
+          body (into (clojure.lang.PersistentQueue/EMPTY) (for [x (range 8)]
+                                                            {:x x :y 0}))
+          game' (assoc game :snake (assoc (:snake game) :body body))
+          frames (iterate ms.g/tick game')]
+      (is (= :alive (get-in (nth frames 0) [:snake :status]))) ; initial
+      (is (= :alive (get-in (nth frames 1) [:snake :status]))) ; move right
+      (is (= :alive (get-in (nth frames 2) [:snake :status]))) ; move down
+      (is (= :alive (get-in (nth frames 3) [:snake :status]))) ; move left
+      (is (= :dead  (get-in (nth frames 4) [:snake :status])))))) ; move up
 

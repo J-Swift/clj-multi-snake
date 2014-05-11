@@ -1,5 +1,4 @@
 (ns multi-snake.snake)
-(declare make-snake)
 
 (def ^:dynamic *segments-per-apple-eaten* 1)
 
@@ -46,6 +45,7 @@
     :or {to-grow 0}}]
   {:head head
    :dir dir
+   :status :alive
    :to-grow to-grow
    :body (or body
              (conj (clojure.lang.PersistentQueue/EMPTY) head))})

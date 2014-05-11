@@ -23,6 +23,13 @@
       action
       cur-dir)))
 
+(defn- resolve-dead-player
+  [{:keys [snake] :as game}]
+  ; check for intersection of body segments
+  (if (some #(> % 1) (vals (frequencies (:body snake))))
+    (assoc-in game [:snake :status] :dead)
+    game))
+
 (defn- contract-player
   "Remove the tail for the snake."
   [{:keys [snake] :as game}]
@@ -62,7 +69,8 @@
   (-> game
       (extend-player)
       (resolve-apples)
-      (contract-player)))
+      (contract-player)
+      (resolve-dead-player)))
 
 (defn make-game
   "Makes a game with the given configuration values:
