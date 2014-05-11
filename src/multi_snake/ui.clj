@@ -151,6 +151,7 @@
         (recur (ms.g/tick game)))
       (do
         (play-again-or-exit)
+        (ms.in/reset-input (:input initial-game))
         (recur initial-game)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

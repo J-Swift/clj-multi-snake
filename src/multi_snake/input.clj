@@ -6,6 +6,7 @@
   ; I really wanted to keep the input abstract, but Java precludes it by requiring
   ; focus to handle keyboard input.
   (attach-input [this component] "Attach the input to the provided component")
+  (reset-input [this] "Clears out any inputs that may be queued, to facillitate restarting a level")
   (get-action [this game] "Should return one of :up, :down, :left, :right, or nil"))
 
 (defn basic-input
@@ -13,6 +14,7 @@
   []
   (reify AInput
     (attach-input [_ _]) ; no-op
+    (reset-input [_]) ; no-op
     (get-action [_ _] nil)))
 
 (defn keyboard-input
@@ -32,5 +34,6 @@
           (k->action right :right)
           (k->action down :down)
           (k->action left :left)))
+      (reset-input [_] (reset! key-atom nil))
       (get-action [_ _] @key-atom)))))
 
