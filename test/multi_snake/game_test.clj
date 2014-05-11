@@ -108,5 +108,22 @@
       (is (= :alive (get-in (nth frames 1) [:snake :status]))) ; move right
       (is (= :alive (get-in (nth frames 2) [:snake :status]))) ; move down
       (is (= :alive (get-in (nth frames 3) [:snake :status]))) ; move left
-      (is (= :dead  (get-in (nth frames 4) [:snake :status])))))) ; move up
+      (is (= :dead  (get-in (nth frames 4) [:snake :status]))))) ; move up
+  (testing "level borders kill you"
+    (let [left-wall (ms.g/make-game {:starting-pos {:x 0 :y 5}
+                                     :starting-dir :left})
+          top-wall (ms.g/make-game {:starting-pos {:x 5 :y 0}
+                                    :starting-dir :up})
+          right-wall (ms.g/make-game {:starting-pos {:x 5 :y 5}
+                                      :board (ms.b/make-board {:width 6})
+                                      :starting-dir :right})
+          bot-wall (ms.g/make-game {:starting-pos {:x 5 :y 5}
+                                    :board (ms.b/make-board {:height 6})
+                                    :starting-dir :down})
+          all-games [left-wall top-wall right-wall bot-wall]]
+      (doseq [game all-games]
+        (is (= :alive (get-in game [:snake :status]))))
+      (doseq [game all-games]
+        (is (= :dead (get-in (ms.g/tick game) [:snake :status])))))))
+
 

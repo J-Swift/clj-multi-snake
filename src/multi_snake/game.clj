@@ -25,8 +25,8 @@
 
 (defn- resolve-dead-player
   [{:keys [snake] :as game}]
-  ; check for intersection of body segments
-  (if (some #(> % 1) (vals (frequencies (:body snake))))
+  (if (or (ms.sn/intersects-self? snake)
+          (ms.sn/intersects-wall? snake (:board game)))
     (assoc-in game [:snake :status] :dead)
     game))
 
