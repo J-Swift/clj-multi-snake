@@ -15,13 +15,6 @@
 ;; Public API
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn intersects-wall?
-  "Check if a given snake has exceeded the borders of a given board"
-  [snake {:keys [width height] :as board}]
-  (some (fn [{:keys [x y] :as segment}]
-          (or (< x 0) (< y 0)
-              (>= x width) (>= y height))) (:body snake)))
-
 (defn intersects-self?
   "Check if a given snake has looped back around on itself"
   [snake]

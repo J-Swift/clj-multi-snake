@@ -1,5 +1,12 @@
 (ns multi-snake.board)
 
+(defn contains-point?
+  "Check if a point is valid for a given board"
+  [{:keys [width height] :as board}
+   {:keys [x y] :as pt}]
+  (and (< -1 x width)
+       (< -1 y height)))
+
 (defn make-board
   "Makes a board with the given configuration values:
   

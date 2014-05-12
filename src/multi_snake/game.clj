@@ -30,10 +30,11 @@
     (win-cond game) (assoc game :status :win)
     :else game))
 
-(defn- resolve-dead-player
+(defn- resolve-dead-snake
   [{:keys [snake] :as game}]
   (if (or (ms.sn/intersects-self? snake)
-          (ms.sn/intersects-wall? snake (:board game)))
+          (some (partial (complement ms.b/contains-point?) (:board game))
+                (positions-for-player game)))
     (assoc-in game [:snake :status] :dead)
     game))
 
@@ -77,7 +78,7 @@
       (extend-player)
       (resolve-apples)
       (contract-player)
-      (resolve-dead-player)
+      (resolve-dead-snake)
       (resolve-win-condition)))
 
 (defn make-game
