@@ -14,7 +14,7 @@
 (def ^:dynamic COLOR_MAP {:player  :black
                           :apple   :red
                           :default :white})
-(def ^:dynamic *FPS* 15)
+(def ^:dynamic *BASE-FPS* 15)
 (def ^:dynamic *CELL_SIZE* 25)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,30 +122,15 @@
   (ss/invoke-now ; make sure we are setup before continuing to run the game
     (game->jframe game)))
 
-(defn- show-win
-  "Congratulatory dialog"
-  []
+(defn- show-generic-dialog
+  [{:keys [title msg no-title yes-title]}]
   (ss/invoke-now
-    (-> (ss/dialog :title "Congrats!"
-                   :content "You win!"
-                   :option-type :default
-                   :success-fn (fn [e] (System/exit 0)))
-        (ss/pack!)
-        ; workaround seesaw displaying in top-left
-        ; https://groups.google.com/forum/#!topic/seesaw-clj/DPdRyrYO800
-        (doto (.setLocationRelativeTo FRAME))
-        (ss/show!))))
-
-(defn- play-again-or-exit
-  "Modal dialog which asks if the user wants to quit the game, or try again."
-  []
-  (ss/invoke-now
-    (-> (ss/dialog :title "Game Over"
-                   :content "You died!"
+    (-> (ss/dialog :title title
+                   :content msg
                    :option-type :yes-no
-                   :options [(ss/action :name "Quit"
+                   :options [(ss/action :name no-title
                                         :handler (fn [e] (System/exit 0)))
-                             (ss/action :name "Try again"
+                             (ss/action :name yes-title
                                         :handler (fn [e] (ss/return-from-dialog e :ok)))])
         (ss/pack!)
         ; workaround seesaw displaying in top-left
@@ -153,22 +138,47 @@
         (doto (.setLocationRelativeTo FRAME))
         (ss/show!))))
 
+(defn- show-win
+  "Congratulatory dialog"
+  []
+  (show-generic-dialog {:title "You win!"
+                        :msg "Not fast enough for you?\nLet's kick it up a notch."
+                        :no-title "No Thanks"
+                        :yes-title "OK"}))
+
+(defn- play-again-or-exit
+  "Modal dialog which asks if the user wants to quit the game, or try again."
+  []
+  (show-generic-dialog {:title "Game Over"
+                        :msg "You died!"
+                        :yes-title "Play again"
+                        :no-title "Quit"}))
+
 (defn- game-loop
   "Renders a frame, then responds depending on the game status"
   [initial-game]
-  (loop [game initial-game]
-    (case (:status game)
-      :ongoing (do
-                 (render-update game)
-                 (Thread/sleep (/ 1000 *FPS*))
-                 (recur (ms.g/tick game)))
-      :lose (do
-              (play-again-or-exit)
-              (ms.in/reset-input (:input initial-game))
-              (recur initial-game))
-      :win (do
-             (render-update game)
-             (show-win)))))
+  (def ^:private FPS *BASE-FPS*)
+  (def ^:private level 1)
+  (letfn [(fps-for-level [lvl]
+            (+ *BASE-FPS* (* (dec lvl) 10)))
+          (prepare-game-for-level [game lvl]
+            (def level lvl)
+            (def FPS (fps-for-level lvl))
+            (ms.in/reset-input (:input game)))]
+    (loop [game initial-game]
+      (render-update game)
+      (case (:status game)
+        :ongoing (do
+                   (Thread/sleep (/ 1000 FPS))
+                   (recur (ms.g/tick game)))
+        :lose (do
+                (play-again-or-exit)
+                (prepare-game-for-level initial-game 1)
+                (recur initial-game))
+        :win (do
+               (show-win)
+               (prepare-game-for-level initial-game (inc level))
+               (recur initial-game))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API
