@@ -41,32 +41,31 @@
     (assoc game :snakes snakes')))
 
 (defn- contract-players
-  "Remove the tail for the snake."
   [{:keys [snakes] :as game}]
   (let [snakes' (vec (map ms.sn/maybe-move-tail snakes))]
     (assoc game :snakes snakes')))
 
-; TODO: clean this up
+(defn- resolve-eaten-apples
+  [{:keys [apples snakes] :as game}]
+  (let [apples-eaten (fn [sn]
+                       (c.set/intersection (ms.sn/snake-body-as-set sn) apples))
+        apples-eaten-by-snake (map (fn [sn]
+                                     (let [eaten (apples-eaten sn)]
+                                       (if (empty? eaten)
+                                         [sn eaten]
+                                         [(ms.sn/eat-apple sn) eaten])))
+                                   snakes)
+        snakes' (vec (map first apples-eaten-by-snake))
+        all-apples-eaten (apply c.set/union (map second apples-eaten-by-snake))]
+    (assoc game :apples (c.set/difference apples all-apples-eaten) :snakes snakes')))
+
 (defn- resolve-apples
-  "If there are apples on the board, check if a player is eating them. If not,
-  then generate one."
   [{:keys [apples snakes] :as game}]
   (if (empty? apples)
     (assoc game :apples (generate-new-apples game))
-    (let [apples-eaten (fn [sn]
-                         (c.set/intersection (ms.sn/snake-body-as-set sn) apples))
-          apples-eaten-by-snake (map (fn [sn]
-                                       (let [eaten (apples-eaten sn)]
-                                         (if (empty? eaten)
-                                           [sn eaten]
-                                           [(ms.sn/eat-apple sn) eaten])))
-                                     snakes)
-          snakes' (vec (map first apples-eaten-by-snake))
-          all-apples-eaten (apply c.set/union (map second apples-eaten-by-snake))]
-      (assoc game :apples (c.set/difference apples all-apples-eaten) :snakes snakes'))))
+    (resolve-eaten-apples game)))
 
 (defn- extend-players-with-inputs
-  "Fetch and resolve input, then update player head position accordingly."
   [game inputs]
   (assoc game :snakes (vec (map ms.sn/move-head (:snakes game) inputs))))
 
@@ -83,6 +82,8 @@
   "Takes a gamestate and moves it one unit-of-time forward, returning the
   resultant gamestate."
   [game]
+  ; Do this now so that the main loop is mostly side-effect free (still have
+  ; a non-deterministic new-apple-fn)
   (let [inputs (doall (map #(ms.in/get-action % game) (:inputs game)))]
     (-> game
         (extend-players-with-inputs inputs)
