@@ -3,6 +3,8 @@
     ;[seesaw.dev :as ss.dev]
     [multi-snake.game :as ms.g]
     [multi-snake.input :as ms.in]
+    [multi-snake.snake :as ms.sn]
+    [multi-snake.board :as ms.b]
     [seesaw.border :as ss.b :only line-border]
     [seesaw.core :as ss]))
 
@@ -11,9 +13,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def LOGGING_ENABLED false)
-(def ^:dynamic COLOR_MAP {:player  :black
-                          :apple   :red
-                          :default :white})
+(def ^:dynamic COLOR_MAP {:snakes  [:red :blue]
+                          :apple    :black
+                          :default  :white})
 (def ^:dynamic *BASE-FPS* 15)
 (def ^:dynamic *CELL_SIZE* 25)
 
@@ -25,71 +27,78 @@
 (def FRAME (ss/frame))
 
 ; Keep these refs around for easy retrieval
-(def N->CELL (atom []))
+(def XY->CELL (atom {}))
 
 (defn- log
   [& args]
   (when LOGGING_ENABLED
     (apply println (map str args))))
 
-(defn- xy->n
-  "Translate from a 2-dimensional array index into a 1-dimensional variant."
-  [x y max-x]
-  (+ x (* max-x y)))
+(defn- paint-xy!
+  [xy color]
+  (ss/config! (@XY->CELL xy) :background color))
 
-(defn- paint-cell!
-  [cell type-of-cell]
-  (ss/config! cell :background (type-of-cell COLOR_MAP)))
+(defn- paint-xys!
+  [xys color]
+  (dorun (map #(paint-xy! % color) xys)))
 
 (defn- new-cell
   []
   (ss/xyz-panel :border (ss.b/line-border :color :black)))
 
-(defn- paint-panel!
-  "Paint all the cells for the given panel"
-  [panel game]
-  (log "paint-panel")
-  (let [{{:keys [width height]} :board apples :apples} game]
-    (doseq [y (range height)
-            x (range width)]
-      (let [n (xy->n x y width)
-            cell (@N->CELL n)
-            pos {:x x :y y}]
-        (cond
-          (get (ms.g/positions-for-player game) pos) (paint-cell! cell :player)
-          (get apples pos) (paint-cell! cell :apple)
-          :else (paint-cell! cell :default)))))
+(defn- paint-snakes!
+  [panel snakes]
+  (dorun (map-indexed (fn [idx snake]
+                        (let [color (get-in COLOR_MAP [:snakes idx])
+                              xys (ms.sn/snake-body-as-set snake)]
+                          (paint-xys! xys color)))
+                      snakes))
   panel)
+
+(defn- paint-apples!
+  [panel apples]
+  (paint-xys! apples (:apple COLOR_MAP))
+  panel)
+
+(defn- paint-board!
+  "Paint all the cells for the given panel"
+  [panel {:keys [width height] :as board}]
+  (paint-xys! (ms.b/get-all-cells board) (:default COLOR_MAP))
+  panel)
+
+(defn- paint-panel!
+  [board-panel game]
+  (-> board-panel
+      (paint-board!  (:board game))
+      (paint-apples! (:apples game))
+      (paint-snakes! (:snakes game))))
 
 (defn- fill-panel!
   "Add physical cell views to the given panel"
-  [panel num-cells]
-  (log "fill-panel")
-  (dotimes [n num-cells]
-    (let [cell (new-cell)]
-      (ss/add! panel cell)
-      (swap! N->CELL assoc n cell)))
+  [panel board]
+  (doseq [xy (ms.b/get-all-cells board)]
+    (let [c (new-cell)]
+      (ss/add! panel c)
+      (swap! XY->CELL assoc xy c)))
   panel)
 
 (defn- game->jpanel
   [game]
-  (log "game->jpanel")
-  (let [{:keys [width height]} (:board game)
+  (let [{:keys [width height] :as board} (:board game)
         panel (ss/grid-panel :columns width :rows height)]
     (-> panel
         (ss/config! :size [(* *CELL_SIZE* width) :by (* *CELL_SIZE* height)])
-        (fill-panel! (* width height))
-        (paint-panel! game))))
+        (fill-panel! board)
+        (paint-panel! game))
+    panel))
 
 (defn- update-frame!
   [game]
-  (log "update-frame")
   (paint-panel! (ss/select FRAME [:#board]) game)
   (ss/repaint! FRAME))
 
 (defn- game->jframe
   [game]
-  (log "game->jframe")
   (-> FRAME
       (ss/config! :title "Multi-Snake!"
                   :content (game->jpanel game)
@@ -102,23 +111,17 @@
 (defn- render-update
   "Make changes to any UI components that may have changed between frames."
   [game]
-  (log "-------------")
-  (log "render-update")
   (ss/invoke-soon
     (update-frame! game)))
 
 (defn- attach-inputs
   "Set up necessary keyboard handlers and random listeners"
   [game]
-  (log "attach-inputs")
-  (-> (:input game)
-      (ms.in/attach-input FRAME)))
+  (dorun (map #(ms.in/attach-input % FRAME) (:inputs game))))
 
 (defn- setup-ui
   "Setup UI with necessary components before game is actually kicked off."
   [game]
-  (log "--------------")
-  (log "render-initial")
   (ss/invoke-now ; make sure we are setup before continuing to run the game
     (game->jframe game)))
 
@@ -164,7 +167,7 @@
           (prepare-game-for-level [game lvl]
             (def level lvl)
             (def FPS (fps-for-level lvl))
-            (ms.in/reset-input (:input game)))]
+            (dorun (map #(ms.in/reset-input %) (:inputs game))))]
     (loop [game initial-game]
       (render-update game)
       (case (:status game)

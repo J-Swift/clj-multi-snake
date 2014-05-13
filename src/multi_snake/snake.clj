@@ -6,10 +6,21 @@
   "Translate a point one unit in the provided direction.
   N.B. Origin is top-left."
   [{:keys [x y]} dir]
+  {:pre (#{:right :down :left :up} dir)}
   (let [offsets {:right [1 0] :left [-1 0]
                  :down [0 1]  :up [0 -1]}
         [x' y'] (get offsets dir)]
     {:x (+ x x') :y (+ y y')}))
+
+(defn- dir-for-input
+  "Either return the action if it is valid or the cur-dir if not."
+  [input cur-dir]
+  (let [opposites #{[:up :down], [:left :right]
+                    [:down :up], [:right :left]}]
+    (if (and input
+             (not (opposites [input cur-dir])))
+      input
+      cur-dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API
@@ -33,25 +44,34 @@
     (assoc snake :body (pop body))))
 
 (defn move-head
-  "Generate snake resulting from moving given snake in given direction. Input is
-  assumed to be well-formed."
-  [{:keys [head body] :as snake} dir]
-  (let [head' (pos-in-dir head dir)]
-    (assoc snake :head head' :dir dir :body (conj body head'))))
+  "Generate snake resulting from moving only the head according to provided input."
+  [{:keys [head body dir] :as snake} input]
+  (let [dir' (dir-for-input input dir)
+        head' (pos-in-dir head dir')]
+    (assoc snake :head head' :dir dir' :body (conj body head'))))
+
+(defn snake-body-as-set
+  [{:keys [body] :as snake}]
+  (into #{} body))
 
 (defn make-snake
   "Makes a snake with the given configuration values:
   
-  :head - starting position
-  :dir  - starting direction
-  :body - queue of spaces occupied by body (default to head)
+  :head    - starting position (default {0,0})
+  :dir     - starting direction (default :right)
+  :body    - queue of spaces occupied by body (default to head)
   :to-grow - number of body segments yet to be realized (default to 0)"
-  [{:keys [head dir body to-grow]
-    :or {to-grow 0}}]
+  ([] (make-snake {}))
+  ([{:keys [head dir body to-grow]
+    :or {head {:x 0 :y 0}
+         dir :right
+         to-grow 0}}]
+  {:post [(some #{(:head %)}
+                (:body %))]} ; ensure the head is included in the body
   {:head head
    :dir dir
    :status :alive
    :to-grow to-grow
    :body (or body
-             (conj (clojure.lang.PersistentQueue/EMPTY) head))})
+             (conj (clojure.lang.PersistentQueue/EMPTY) head))}))
 

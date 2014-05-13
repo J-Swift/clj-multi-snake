@@ -13,9 +13,17 @@
   "Provide a no-op implementation of AInput"
   []
   (reify AInput
-    (attach-input [_ _]) ; no-op
-    (reset-input [_]) ; no-op
     (get-action [_ _] nil)))
+
+(defn static-input
+  "Automated input that cycles through given values"
+  [dirs]
+  (let [coll (atom (cycle dirs))]
+    (reify AInput
+      (get-action [_ _]
+        (let [dir (first @coll)]
+          (swap! coll rest)
+          dir)))))
 
 (defn keyboard-input
   "Use the keyboard. Provide a mapping from actions to keys.
