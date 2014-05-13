@@ -149,5 +149,17 @@
           game (ms.g/make-game {:snakes snakes :inputs inputs})
           frames (iterate ms.g/tick game)]
       (is (= {:x 2 :y 2} (get-in (nth frames 2) [:snakes 0 :head])))
-      (is (= {:x 8 :y 8} (get-in (nth frames 2) [:snakes 1 :head]))))))
+      (is (= {:x 8 :y 8} (get-in (nth frames 2) [:snakes 1 :head])))))
+  (testing "die when they intersect each other"
+    (let [snakes [(ms.sn/make-snake {:dir :right
+                                     :head {:x 1 :y 0}})
+                  (ms.sn/make-snake {:dir :left
+                                     :head {:x 5 :y 0}})]
+          game (ms.g/make-game {:snakes snakes})
+          frames (iterate ms.g/tick game)
+          snake-status'-for-frame (fn [frame-num]
+                                    (map :status (:snakes (nth frames frame-num))))]
+      (is (= [:alive :alive] (snake-status'-for-frame 0)))
+      (is (= [:alive :alive] (snake-status'-for-frame 1)))
+      (is (= [:dead :dead] (snake-status'-for-frame 2))))))
 

@@ -22,15 +22,23 @@
 
 (defn- resolve-dead-snakes
   [{:keys [snakes] :as game}]
-  (assoc game :snakes (vec (map
-                                 (fn [sn]
-                                   (let [hits-wall?
-                                         (partial (complement ms.b/contains-point?) (:board game))]
-                                   (if (or (ms.sn/intersects-self? sn)
-                                           (some hits-wall? (ms.sn/snake-body-as-set sn)))
-                                     (assoc sn :status :dead)
-                                     sn)))
-                                 snakes))))
+  (let [snake-bodies (zipmap (range) (map ms.sn/snake-body-as-set snakes))
+        hits-wall? (partial (complement ms.b/contains-point?) (:board game))
+        hits-other-snake? (fn [body others]
+                            (some (complement empty?)
+                                 (c.set/intersection body
+                                                     (into #{} (apply concat others)))))
+        snakes' (->> snakes
+                   (map-indexed
+                       (fn [idx sn]
+                         (let [body (snake-bodies idx)]
+                           (if (or (ms.sn/intersects-self? sn)
+                                   (some hits-wall? body)
+                                   (hits-other-snake? body (vals (dissoc snake-bodies idx))))
+                             (assoc sn :status :dead)
+                             sn))))
+                   vec)]
+    (assoc game :snakes snakes')))
 
 (defn- contract-players
   "Remove the tail for the snake."
