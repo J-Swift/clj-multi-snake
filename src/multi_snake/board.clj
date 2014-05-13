@@ -7,6 +7,13 @@
   (and (< -1 x width)
        (< -1 y height)))
 
+(defn get-all-cells
+  "Return a seq of cells for the given board in order left->right, top->bottom"
+  [{:keys [width height] :as board}]
+  (for [y (range height)
+        x (range width)]
+    {:x x :y y}))
+
 (defn make-board
   "Makes a board with the given configuration values:
   
