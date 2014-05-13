@@ -161,5 +161,19 @@
                                     (map :status (:snakes (nth frames frame-num))))]
       (is (= [:alive :alive] (snake-status'-for-frame 0)))
       (is (= [:alive :alive] (snake-status'-for-frame 1)))
-      (is (= [:dead :dead] (snake-status'-for-frame 2))))))
+      (is (= [:dead :dead] (snake-status'-for-frame 2)))))
+  (testing "certain apples may only be picked up by certain snakes"
+    (binding [ms.g/generate-new-apples (fn [_] (hash-set))]
+      (let [snakes [(ms.sn/make-snake {:dir :right
+                                       :head {:x 1 :y 3}})
+                    (ms.sn/make-snake {:dir :right
+                                       :head {:x 1 :y 4}})]
+            inputs [(ms.in/basic-input)
+                    (ms.in/static-input [:right :up])]
+            apples [{:x 2 :y 3 :edible-by 1}]
+            game (ms.g/make-game {:snakes snakes :inputs inputs :apples apples})
+            frames (iterate ms.g/tick game)]
+      (is (not (empty? (:apples (nth frames 0)))))
+      (is (not (empty? (:apples (nth frames 1)))))
+      (is (empty? (:apples (nth frames 2))))))))
 

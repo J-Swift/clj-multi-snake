@@ -10,8 +10,17 @@
   "Return a hash-set of new apple positions given the current gamestate."
   (fn [{:keys [board snakes] :as game}]
     (let [possible-apples (ms.b/get-all-cells board)
-          player-positions (get-player-positions game)]
-      (hash-set (first (drop-while player-positions (shuffle possible-apples)))))))
+          player-positions (get-player-positions game)
+          ; 1/4 of the apples are 'owned'
+          owner (->> snakes
+                     (mapcat (fn [sn] [:all :all :all (:id sn)]))
+                     shuffle
+                     first)
+          apple (->> possible-apples
+                     shuffle
+                     (drop-while player-positions)
+                     first)]
+      (hash-set (assoc apple :edible-by owner)))))
 
 (defn- resolve-win-condition
   [{:keys [win-cond snakes] :as game}]
@@ -47,16 +56,23 @@
 
 (defn- resolve-eaten-apples
   [{:keys [apples snakes] :as game}]
-  (let [apples-eaten (fn [sn]
-                       (c.set/intersection (ms.sn/snake-body-as-set sn) apples))
-        apples-eaten-by-snake (map (fn [sn]
-                                     (let [eaten (apples-eaten sn)]
+  (let [apples-edible-by-snake (fn [sn]
+                                 (filter (fn [apple]
+                                           (let [eater (get apple :edible-by :all)]
+                                             (#{:all (:id sn)} eater)))
+                                         apples))
+        apples-eaten-by-snake (fn [sn]
+                                (let [body (ms.sn/snake-body-as-set sn)]
+                                  (filter #(body {:x (:x %) :y (:y %)})
+                                          (apples-edible-by-snake sn))))
+        snakes-with-apples-eaten (map (fn [sn]
+                                     (let [eaten (apples-eaten-by-snake sn)]
                                        (if (empty? eaten)
                                          [sn eaten]
                                          [(ms.sn/eat-apple sn) eaten])))
                                    snakes)
-        snakes' (vec (map first apples-eaten-by-snake))
-        all-apples-eaten (apply c.set/union (map second apples-eaten-by-snake))]
+        snakes' (vec (map first snakes-with-apples-eaten))
+        all-apples-eaten (apply c.set/union (map second snakes-with-apples-eaten))]
     (assoc game :apples (c.set/difference apples all-apples-eaten) :snakes snakes')))
 
 (defn- resolve-apples
@@ -76,7 +92,7 @@
 (defn get-player-positions
   "Convert player positions into something a bit more manageable."
   [game]
-  (into #{} (mapcat ms.sn/snake-body-as-set (:snakes game))))
+  (into #{} (mapcat :body (:snakes game))))
 
 (defn tick
   "Takes a gamestate and moves it one unit-of-time forward, returning the
@@ -113,10 +129,10 @@
                              (:snakes game)))}}]
   {:post [(= (count (:snakes %))
              (count (:inputs %)))]}
-   {:snakes snakes
+   {:snakes (vec (map #(assoc %1 :id %2) snakes (range)))
     :inputs (or inputs (repeatedly (count snakes) ms.in/basic-input))
     :board board
     :status :ongoing
     :win-cond win-cond
-    :apples apples}))
+    :apples (into #{} apples)}))
 

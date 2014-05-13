@@ -14,9 +14,10 @@
 
 (def LOGGING_ENABLED false)
 (def ^:dynamic COLOR_MAP {:snakes  [:red :blue]
-                          :apple    :black
-                          :default  :white})
-(def ^:dynamic *BASE-FPS* 15)
+                          :apples  [:pink :lightblue]
+                          :default-apple :black
+                          :default-board :white})
+(def ^:dynamic *BASE-FPS* 10)
 (def ^:dynamic *CELL_SIZE* 25)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -35,8 +36,8 @@
     (apply println (map str args))))
 
 (defn- paint-xy!
-  [xy color]
-  (ss/config! (@XY->CELL xy) :background color))
+  [{:keys [x y]} color]
+  (ss/config! (@XY->CELL {:x x :y y}) :background color))
 
 (defn- paint-xys!
   [xys color]
@@ -57,13 +58,18 @@
 
 (defn- paint-apples!
   [panel apples]
-  (paint-xys! apples (:apple COLOR_MAP))
+  (dorun (map (fn [apple]
+                (paint-xy! apple (let [edible-by (get apple :edible-by :all)]
+                                   (if (= edible-by :all)
+                                     (:default-apple COLOR_MAP)
+                                     (get-in COLOR_MAP [:apples edible-by])))))
+              apples))
   panel)
 
 (defn- paint-board!
   "Paint all the cells for the given panel"
   [panel {:keys [width height] :as board}]
-  (paint-xys! (ms.b/get-all-cells board) (:default COLOR_MAP))
+  (paint-xys! (ms.b/get-all-cells board) (:default-board COLOR_MAP))
   panel)
 
 (defn- paint-panel!
