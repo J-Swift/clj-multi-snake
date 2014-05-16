@@ -4,4 +4,5 @@
             :url "http://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [seesaw "1.4.4"]] ; UI framework
-  :main multi-snake.core)
+  :main multi-snake.core
+  :aot [multi-snake.core])

@@ -18,6 +18,7 @@
                           :default-apple :black
                           :default-board :white})
 (def ^:dynamic *BASE-FPS* 10)
+(def ^:dynamic *FPS-STEP-PER-LEVEL* 5)
 (def ^:dynamic *CELL_SIZE* 25)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -36,6 +37,7 @@
     (apply println (map str args))))
 
 (defn- paint-xy!
+  ; Destructure so we can paint anything with an x,y coord
   [{:keys [x y]} color]
   (ss/config! (@XY->CELL {:x x :y y}) :background color))
 
@@ -68,7 +70,7 @@
 
 (defn- paint-board!
   "Paint all the cells for the given panel"
-  [panel {:keys [width height] :as board}]
+  [panel board]
   (paint-xys! (ms.b/get-all-cells board) (:default-board COLOR_MAP))
   panel)
 
@@ -169,7 +171,7 @@
   (def ^:private FPS *BASE-FPS*)
   (def ^:private level 1)
   (letfn [(fps-for-level [lvl]
-            (+ *BASE-FPS* (* (dec lvl) 10)))
+            (+ *BASE-FPS* (* (dec lvl) *FPS-STEP-PER-LEVEL*)))
           (prepare-game-for-level [game lvl]
             (def level lvl)
             (def FPS (fps-for-level lvl))
