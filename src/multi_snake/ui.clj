@@ -176,20 +176,23 @@
             (def level lvl)
             (def FPS (fps-for-level lvl))
             (dorun (map #(ms.in/reset-input %) (:inputs game))))]
-    (loop [game initial-game]
+    (loop [game initial-game
+           i 0]
       (render-update game)
       (case (:status game)
         :ongoing (do
-                   (Thread/sleep (/ 1000 FPS))
-                   (recur (ms.g/tick game)))
+                   (Thread/sleep (/ 1000 (* FPS 4)))
+                   (if (zero? (mod i 4))
+                     (recur (ms.g/tick game) (inc i))
+                     (recur game (inc i))))
         :lose (do
                 (play-again-or-exit)
                 (prepare-game-for-level initial-game 1)
-                (recur initial-game))
+                (recur initial-game 0))
         :win (do
                (show-win)
                (prepare-game-for-level initial-game (inc level))
-               (recur initial-game))))))
+               (recur initial-game 0))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public API
